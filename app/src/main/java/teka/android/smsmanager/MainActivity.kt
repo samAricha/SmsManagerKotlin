@@ -48,6 +48,7 @@ import teka.android.smsmanager.presentation.recipient_screen.RecipientViewModel
 import teka.android.smsmanager.presentation.recipient_screen.RecipientViewModelFactory
 import teka.android.smsmanager.presentation.send_sms_screen.SendSmsScreen
 import teka.android.smsmanager.presentation.send_sms_screen.SmsViewModel
+import teka.android.smsmanager.presentation.send_sms_screen.SmsViewModelFactory
 
 import teka.android.smsmanager.ui.theme.SmsManagerTheme
 import teka.android.smsmanager.ui.theme.greenColor
@@ -142,7 +143,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     label = {
-                                        Text(text = "Other Screen")
+                                        Text(text = "Add Recipient")
                                     }
                                 )
                             }
@@ -150,7 +151,7 @@ class MainActivity : ComponentActivity() {
 
                     ) {
 
-                        val smsViewModel: SmsViewModel = viewModel()
+
                         val database = DBProvider.getDatabase(applicationContext)
                         val recipientDao = database.recipientsDao()
 
@@ -158,6 +159,13 @@ class MainActivity : ComponentActivity() {
                             this,
                             RecipientViewModelFactory(recipientDao)
                         )[RecipientViewModel::class.java]
+
+                        val smsViewModel = ViewModelProvider(
+                            this,
+                            SmsViewModelFactory(recipientDao)
+                        )[SmsViewModel::class.java]
+
+                        //val smsViewModel: SmsViewModel = viewModel()
 
                         myNavigation(navHostController = navController,recipientViewModel = recipientViewModel, smsViewModel = smsViewModel)
 
