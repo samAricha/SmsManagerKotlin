@@ -6,8 +6,9 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "recipients")
 data class Recipient(
 
-    @PrimaryKey val id: Int,
+    @PrimaryKey
+    val id: Int = 0,
     val name: String,
-    val email: String
+    val phone: String
 
 )

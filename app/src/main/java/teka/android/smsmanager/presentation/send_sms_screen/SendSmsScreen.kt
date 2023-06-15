@@ -16,10 +16,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import teka.android.smsmanager.navigation.Screen
 import teka.android.smsmanager.ui.theme.greenColor
 
 @Composable
-fun SendSmsScreen(viewModel: SmsViewModel) {
+fun SendSmsScreen(
+    viewModel: SmsViewModel,
+    navController: NavHostController) {
     val context = LocalContext.current
 
     Column(
@@ -64,7 +69,8 @@ fun SendSmsScreen(viewModel: SmsViewModel) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { viewModel.sendMessage(context) }
+            onClick = { viewModel.sendMessage(context)
+            navController.navigate(Screen.Recipients.route)}
         ) {
             Text(
                 text = "Send SMS",

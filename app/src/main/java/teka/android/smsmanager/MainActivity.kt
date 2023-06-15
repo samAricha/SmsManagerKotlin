@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,7 +33,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import teka.android.smsmanager.data.room.DBProvider
+import teka.android.smsmanager.data.room.SmsManagerDB
+import teka.android.smsmanager.navigation.Screen
+import teka.android.smsmanager.navigation.myNavigation
+import teka.android.smsmanager.presentation.recipient_screen.RecipientDataCollectionScreen
+import teka.android.smsmanager.presentation.recipient_screen.RecipientScreen
+import teka.android.smsmanager.presentation.recipient_screen.RecipientViewModel
+import teka.android.smsmanager.presentation.recipient_screen.RecipientViewModelFactory
 import teka.android.smsmanager.presentation.send_sms_screen.SendSmsScreen
 import teka.android.smsmanager.presentation.send_sms_screen.SmsViewModel
 
@@ -45,57 +59,107 @@ import teka.android.smsmanager.ui.theme.greenColor
 class MainActivity : ComponentActivity() {
 
     @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+
+            val navController = rememberNavController()
+
+
             SmsManagerTheme {
-                // on below line we are specifying background color for our application
                 Surface(
-                    // on below line we are specifying modifier and color for our app
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
 
-                    // on the below line we are specifying
-                    // the theme as the scaffold.
+
                     Scaffold(
-
-                        // in scaffold we are specifying the top bar.
                         topBar = {
-
-                            // inside top bar we are specifying
-                            // background color.
                             TopAppBar(backgroundColor = greenColor,
-
-                                // along with that we are specifying
-                                // title for our top bar.
                                 title = {
-
-                                    // in the top bar we are specifying
-                                    // tile as a text
                                     Text(
-                                        // on below line we are specifying
-                                        // text to display in top app bar.
                                         text = "Teka Dev",
-
-                                        // on below line we are specifying
-                                        // modifier to fill max width.
                                         modifier = Modifier.fillMaxWidth(),
-
-                                        // on below line we are specifying
-                                        // text alignment.
                                         textAlign = TextAlign.Center,
-
-                                        // on below line we are specifying
-                                        // color for our text.
                                         color = Color.White
                                     )
                                 })
-                        }) {
+                        },
+
+                        bottomBar = {
+                            BottomNavigation {
+                                val navController = navController
+                                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                                val currentRoute = navBackStackEntry?.destination?.route
+
+                                BottomNavigationItem(
+                                    selected = currentRoute == Screen.SendSms.route,
+                                    onClick = {
+                                        navController.navigate(Screen.SendSms.route) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.baseline_sms_24),
+                                            contentDescription = "Send SMS"
+                                        )
+                                    },
+                                    label = {
+                                        Text(text = "Send SMS")
+                                    }
+                                )
+
+                                BottomNavigationItem(
+                                    selected = currentRoute == Screen.Recipients.route,
+                                    onClick = {
+                                        navController.navigate(Screen.Recipients.route) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.baseline_contacts_24),
+                                            contentDescription = "Add Contact List"
+                                        )
+                                    },
+                                    label = {
+                                        Text(text = "Recipients")
+                                    }
+                                )
+
+                                BottomNavigationItem(
+                                    selected = currentRoute == Screen.addRecipient.route,
+                                    onClick = {
+                                        navController.navigate(Screen.addRecipient.route) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    icon = {
+                                        Icon(
+                                            painter = painterResource(R.drawable.baseline_perm_contact_calendar_24),
+                                            contentDescription = "Contact List"
+                                        )
+                                    },
+                                    label = {
+                                        Text(text = "Other Screen")
+                                    }
+                                )
+                            }
+                        }
+
+                    ) {
 
                         val smsViewModel: SmsViewModel = viewModel()
-                        SendSmsScreen(smsViewModel)
+                        val database = DBProvider.getDatabase(applicationContext)
+                        val recipientDao = database.recipientsDao()
+
+                        val recipientViewModel = ViewModelProvider(
+                            this,
+                            RecipientViewModelFactory(recipientDao)
+                        )[RecipientViewModel::class.java]
+
+                        myNavigation(navHostController = navController,recipientViewModel = recipientViewModel, smsViewModel = smsViewModel)
 
 
                     }
@@ -104,4 +168,37 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+
+
+
+//bottom navigation boiler plate code
+data class BottomNavigationItem(
+    val route: String,
+    val icon: Int,
+    val contentDescription: String,
+    val label: String
+)
+
+
+val bottomNavigationItems = listOf(
+    BottomNavigationItem(
+        route = Screen.SendSms.route,
+        icon = R.drawable.baseline_sms_24,
+        contentDescription = "Send SMS",
+        label = "Send SMS"
+    ),
+    BottomNavigationItem(
+        route = Screen.Recipients.route,
+        icon = R.drawable.baseline_contacts_24,
+        contentDescription = "Add Contact List",
+        label = "Recipients"
+    ),
+    BottomNavigationItem(
+        route = Screen.addRecipient.route,
+        icon = R.drawable.baseline_perm_contact_calendar_24,
+        contentDescription = "Contact List",
+        label = "Other Screen"
+    )
+)
 
